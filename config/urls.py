@@ -21,6 +21,7 @@ from django.conf import settings
 from django.views.generic.base import RedirectView
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
+from api.greader import greader
 
 
 favicon_view = RedirectView.as_view(url='/static/favicon.ico', permanent=True)
@@ -43,6 +44,7 @@ urlpatterns = [
     path("favicon.ico", favicon_view),
     path("log/", log, name="log"),
     path("rss/", include("core.urls")),
+    path("api/", greader.urls),
     path("",admin.site.urls),
     ]
 
