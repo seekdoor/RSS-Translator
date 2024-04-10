@@ -10,21 +10,14 @@ import cityhash
 from django.conf import settings
 from django.db import IntegrityError
 
-from huey.contrib.djhuey import HUEY as huey
-from huey.contrib.djhuey import on_startup, on_shutdown, task, db_task
-
 from .models import O_Feed, T_Feed
 from django_text_translator.models import TranslatorEngine, Translated_Content
 
 from utils.feed_action import fetch_feed, generate_atom_feed
-from utils import text_handler
+from utils import text_handler, crontab
 from bs4 import BeautifulSoup, Comment
 
 
-# from huey_monitor.models import TaskModel
-
-# @periodic_task(crontab( minute='*/1'))
-@on_startup()
 def schedule_update():
     feeds = O_Feed.objects.all()
     tasks = huey.scheduled() + huey.pending()
@@ -33,6 +26,7 @@ def schedule_update():
     for feed in feeds:
         if feed.sid not in task_feeds:
             update_original_feed.schedule(args=(feed.sid,), delay=feed.update_frequency * 60)
+
 
 #@on_shutdown()
 # def flush_all():
@@ -43,7 +37,7 @@ def schedule_update():
     # TaskModel.objects.all().delete()
 
 
-@task(retries=3)
+#@task(retries=3)
 def update_original_feed(sid: str):
     try:
         #obj = O_Feed.objects.get(sid=sid)
@@ -97,7 +91,7 @@ def update_original_feed(sid: str):
             update_translated_feed.schedule(args=(t_feed.sid,), delay=1)
 
 
-@task(retries=3)
+#@task(retries=3)
 def update_translated_feed(sid: str, force=False):
     try:
         #obj = T_Feed.objects.get(sid=sid)
@@ -176,7 +170,7 @@ def update_translated_feed(sid: str, force=False):
         obj.save()
 
 
-@task()
+#@task()
 def translate_feed(
         feed: feedparser.FeedParserDict,
         target_language: str,
