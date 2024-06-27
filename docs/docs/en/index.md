@@ -2,47 +2,49 @@
 <img src="/assets/logo.svg" width="100" height="100">
 </div>
 
-# RSS翻译器
+# RSS Translator
 [中文](/) | [English](/en)
 
-开源、简洁、可自部署
+Open source, Simple, Self-deployable
 
-官方网站：[rsstranslator.com](https://rsstranslator.com)
+Official website: [rsstranslator.com](https://rsstranslator.com)
 
-## 功能：
+## Features:
 
-1. 翻译标题或内容
-2. 双语显示
-3. 订阅翻译后的RSS/JSON
-4. 支持多种翻译引擎，每个源都可以指定一个翻译引擎
-5. 控制翻译源的更新频率和查看翻译状态
-6. 缓存所有翻译内容，尽可能减少翻译费用
-7. 可查看每个源所花费的Token/字符数
-8. AI内容总结
-9. 获取全文
+1. Translation of title or content
+2. Bilingual display
+3. Subscribe to the translated RSS/JSON
+4. Support multiple translation engines, each source can specify a translation engine
+5. Control the update frequency of the translation source and check the status of the translation
+6. Cache all translated content to minimise translation costs
+7. View the number of tokens/characters spent on each source.
+8. AI summary content
+9. Fetch Original Article 
    
-目前支持的翻译服务：
+Currently supported translation services:
 
+- Free Translators(A collection of all major free translation services)
 - DeepL
 - DeepLX
 - Google Translate(Web)
 - Microsoft Translate API
 - Caiyun API
 - OpenAI
-- ClaudeAI
+- Claude AI
 - Azure OpenAI
 - Google Gemini
 - Moonshot AI
 - Together AI
 - OpenRouter AI
 - Groq
+- Doubao
 
-陆续增加中   
-具体信息请查看[<翻译服务>](translator.md)
+Continuously adding   
+For more information, please check [translation service](translator.md).
 
-## 赞助
+## Sponsorship
 
-感谢以下公司为本项目提供的开源支持。
+Thanks to the following companies for providing open source support for this project.
 
 <table style="width:auto;">
   <tr>
@@ -63,21 +65,21 @@
     </td>
   </tr>
 </table>
-
-
-非常感谢以下用户的支持:
+Thank you for your support!
 <p align="center">
   <a href="https://github.com/versun/sponsors/">
     <img src='https://raw.githubusercontent.com/versun/sponsors/main/sponsors.svg'/>
   </a>
 </p>
 
-如有余力，请考虑成为赞助者：[爱发电](https://afdian.net/a/versun) | [Open Collective](https://opencollective.com/rsstranslator)
-> 说明： 赞助头像每天早上和下午的5:30分刷新(UTC时区)。
-## 开发贡献
-[请查看Wiki](https://github.com/rss-translator/RSS-Translator/wiki)
+If it has helped you, please consider sponsoring me: [AFDIAN](https://afdian.net/a/versun) | [Open Collective](https://opencollective.com/rsstranslator)
+> Description: Sponsored avatars are refreshed every morning and afternoon at 5:30 a.m. (UTC time zone).
 
-## Star历史图
+## Contribution
+
+[WiKi](https://github.com/rss-translator/RSS-Translator/wiki)
+
+## Star
 
 [![Star History Chart](https://api.star-history.com/svg?repos=rss-translator/RSS-Translator&type=Date)](https://star-history.com/#rss-translator/RSS-Translator&Date)
 

@@ -322,6 +322,39 @@ class GroqTranslatorAdmin(BaseTranslatorAdmin):
         "base_url",
     ]
 
+class FreeTranslatorsAdmin(BaseTranslatorAdmin):
+    fields = [
+        "name",
+        "proxies",
+        "max_characters",
+    ]
+    list_display = [
+        "name",
+        "is_valid",
+        "proxies",
+    ]
+
+class DoubaoTranslatorAdmin(BaseTranslatorAdmin):
+    fields = [
+        "name",
+        "api_key",
+        "endpoint_id",
+        "region",
+        "translate_prompt",
+        "content_translate_prompt",
+        "summary_prompt",
+        "max_tokens",
+    ]
+    list_display = [
+        "name",
+        "is_valid",
+        "masked_api_key",
+        "endpoint_id",
+        "translate_prompt",
+        "content_translate_prompt",
+        "summary_prompt",
+        "max_tokens",
+    ]
 
 class Translated_ContentAdmin(admin.ModelAdmin):
     fields = [
@@ -367,6 +400,8 @@ core_admin_site.register(MoonshotAITranslator, MoonshotAITranslatorAdmin)
 core_admin_site.register(TogetherAITranslator, TogetherAITranslatorAdmin)
 core_admin_site.register(OpenRouterAITranslator, OpenRouterAITranslatorAdmin)
 core_admin_site.register(GroqTranslator, GroqTranslatorAdmin)
+core_admin_site.register(FreeTranslators, FreeTranslatorsAdmin)
+core_admin_site.register(DoubaoTranslator, DoubaoTranslatorAdmin)
 
 if settings.DEBUG:
     core_admin_site.register(Translated_Content, Translated_ContentAdmin)

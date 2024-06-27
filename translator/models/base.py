@@ -12,7 +12,7 @@ class TranslatorEngine(models.Model):
     valid = models.BooleanField(_("Valid"), null=True)
     is_ai = models.BooleanField(default=False, editable=False)
 
-    def translate(self, text: str, target_language: str) -> dict:
+    def translate(self, text: str, target_language: str, source_language:str="auto", **kwargs) -> dict:
         raise NotImplementedError(
             "subclasses of TranslatorEngine must provide a translate() method"
         )
@@ -142,6 +142,7 @@ class OpenAIInterface(TranslatorEngine):
         system_prompt: str = None,
         user_prompt: str = None,
         text_type: str = "title",
+        **kwargs
     ) -> dict:
         logging.info(">>> Translate [%s]: %s", target_language, text)
         client = self._init()
@@ -158,6 +159,10 @@ class OpenAIInterface(TranslatorEngine):
                 system_prompt += f"\n\n{user_prompt}"
 
             res = client.with_options(max_retries=3).chat.completions.create(
+                extra_headers={
+                    "HTTP-Referer": "https://www.rsstranslator.com",
+                    "X-Title": "RSS Translator"
+                },
                 model=self.model,
                 messages=[
                     {"role": "system", "content": system_prompt},
@@ -169,7 +174,8 @@ class OpenAIInterface(TranslatorEngine):
                 presence_penalty=self.presence_penalty,
                 max_tokens=self.max_tokens,
             )
-            if res.choices[0].finish_reason.lower() == "stop" or res.choices[0].message.content:
+            #if res.choices[0].finish_reason.lower() == "stop" or res.choices[0].message.content:
+            if res.choices and res.choices[0].message.content:
                 translated_text = res.choices[0].message.content
                 logging.info("OpenAITranslator->%s: %s", res.choices[0].finish_reason, translated_text)
             # else:
@@ -177,7 +183,7 @@ class OpenAIInterface(TranslatorEngine):
             #     logging.warning("Translator->%s: %s", res.choices[0].finish_reason, text)
             tokens = res.usage.total_tokens
         except Exception as e:
-            logging.error("ErrorTranslator->%s: %s", e, text)
+            logging.error("OpenAIInterface->%s: %s", e, text)
 
         return {"text": translated_text, "tokens": tokens}
 

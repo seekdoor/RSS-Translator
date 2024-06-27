@@ -8,7 +8,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.core.validators import MinValueValidator, MaxValueValidator
-from tagulous.models import TagField, SingleTagField
+from tagulous.models import SingleTagField
 
 
 class O_Feed(models.Model):
@@ -158,7 +158,7 @@ class T_Feed(models.Model):
         editable=False,
     )
 
-    translate_title = models.BooleanField(_("Translate Title"), default=True)
+    translate_title = models.BooleanField(_("Translate Title"), default=False)
     translate_content = models.BooleanField(_("Translate Content"), default=False)
     summary = models.BooleanField(_("Summary"), default=False)
 

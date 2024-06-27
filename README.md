@@ -23,6 +23,7 @@
    
 目前支持的翻译引擎：
 
+- Free Translators(集合了所有主流的免费翻译服务)
 - DeepL
 - DeepLX
 - OpenAI
@@ -36,6 +37,7 @@
 - Together AI
 - OpenRouter AI
 - Groq
+- 豆包(Doubao)
 
 陆续增加中
 
@@ -57,7 +59,7 @@
     </td>
     <td style="padding:10px;">
       <a href="https://www.gitpod.io">
-        <img src="https://raw.githubusercontent.com/rss-translator/RSS-Translator/main/website/docs/assets/gitpod.svg" alt="Gitpod" style="width:100px; height:100px;">
+        <img src="https://raw.githubusercontent.com/rss-translator/RSS-Translator/main/docs/docs/assets/gitpod.svg" alt="Gitpod" style="width:100px; height:100px;">
       </a>
     </td>
   </tr>

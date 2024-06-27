@@ -3,13 +3,13 @@ import os
 import json
 
 from django.conf import settings
-from django.http import HttpResponse, Http404, StreamingHttpResponse, JsonResponse
+from django.http import HttpResponse, StreamingHttpResponse, JsonResponse
 from django.utils.encoding import smart_str
 from django.views.decorators.cache import cache_page
 from django.views.decorators.http import condition
 from .models import T_Feed, O_Feed
 
-from utils.feed_action import merge_all_atom
+from utils.feed_action import merge_all_atom, check_file_path
 
 
 def get_modified(request, feed_sid):
@@ -42,8 +42,9 @@ def rss(request, feed_sid):
     # Sanitize the feed_sid to prevent path traversal attacks
     feed_sid = smart_str(feed_sid)
 
-    feed_file_path = os.path.join(settings.DATA_FOLDER, "feeds", f"{feed_sid}.xml")
-
+    #feed_file_path = os.path.join(settings.DATA_FOLDER, "feeds", f"{feed_sid}.xml")
+    base_path = os.path.join(settings.DATA_FOLDER, "feeds")
+    feed_file_path = check_file_path(base_path=base_path, filename=f"{feed_sid}.xml")
     # Check if the file exists and if not, raise a 404 error
     if not os.path.exists(feed_file_path):
         logging.warning("Requested feed file not found: %s", feed_file_path)
@@ -54,13 +55,13 @@ def rss(request, feed_sid):
 
     try:
         # Stream the file content
-        def file_iterator(file_name, chunk_size=8192):
-            with open(file_name, "rb") as f:
-                while True:
-                    chunk = f.read(chunk_size)
-                    if not chunk:
-                        break
-                    yield chunk
+        # def file_iterator(file_name, chunk_size=8192):
+        #     with open(file_name, "rb") as f:
+        #         while True:
+        #             chunk = f.read(chunk_size)
+        #             if not chunk:
+        #                 break
+        #             yield chunk
 
         response = StreamingHttpResponse(
             file_iterator(feed_file_path), content_type="application/xml"
@@ -82,8 +83,8 @@ def rss(request, feed_sid):
 def rss_json(request, feed_sid):
     # Sanitize the feed_sid to prevent path traversal attacks
     feed_sid = smart_str(feed_sid)
-
-    feed_file_path = os.path.join(settings.DATA_FOLDER, "feeds", f"{feed_sid}.json")
+    base_path = os.path.join(settings.DATA_FOLDER, "feeds")
+    feed_file_path = check_file_path(base_path, f"{feed_sid}.json")
     content_type = "application/json; charset=utf-8"
 
     # Check if the file exists and if not, raise a 404 error
@@ -119,8 +120,9 @@ def all(request, name):
         # get all feed file path from feeds.sid
         feed_file_paths = get_feed_file_paths(feeds)
         merge_all_atom(feed_file_paths, "all_t")
-
-        merge_file_path = os.path.join(settings.DATA_FOLDER, "feeds", "all_t.xml")
+        base_path = os.path.join(settings.DATA_FOLDER, "feeds")
+        #merge_file_path = os.path.join(settings.DATA_FOLDER, "feeds", "all_t.xml")
+        merge_file_path = check_file_path(base_path, "all_t.xml")
         response = StreamingHttpResponse(
             file_iterator(merge_file_path), content_type="application/xml"
         )
@@ -149,9 +151,10 @@ def category(request, category: str):
         # feed_file_paths = [os.path.join(settings.DATA_FOLDER, 'feeds', f'{feed.sid}.xml') for feed in feeds]
         feed_file_paths = get_feed_file_paths(feeds)
         merge_all_atom(feed_file_paths, category)
-
-        merge_file_path = os.path.join(settings.DATA_FOLDER, "feeds", f"{category}.xml")
-        response = StreamingHttpResponse(
+        base_path = os.path.join(settings.DATA_FOLDER, "feeds")
+        #merge_file_path = os.path.join(settings.DATA_FOLDER, "feeds", f"{category}.xml")
+        merge_file_path = check_file_path(base_path, f"{category}.xml")
+        response = StreamingHttpResponse( 
             file_iterator(merge_file_path), content_type="application/xml"
         )
         response["Content-Disposition"] = f"inline; filename={category}.xml"
@@ -160,7 +163,7 @@ def category(request, category: str):
     except Exception as e:
         # Log the exception and return an appropriate error response
         logging.exception(
-            "Failed to read the category feed file: %s / %s", merge_file_path, str(e)
+            "Failed to read the category feed file: %s / %s", category, str(e)
         )
         return HttpResponse(status=500)
 
@@ -181,9 +184,8 @@ def get_feed_file_paths(feeds: list) -> list:
     return feed_file_paths
 
 
-def file_iterator(file_name, chunk_size=8192):
-    fullpath = os.path.normpath(file_name)
-    with open(fullpath, "rb") as f:
+def file_iterator(file_path, chunk_size=8192):
+    with open(file_path, "rb") as f:
         while True:
             chunk = f.read(chunk_size)
             if not chunk:
