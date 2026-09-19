@@ -1,3 +1,5 @@
+*.cursor
+
 # Project
 /static
 data/
@@ -8,6 +10,7 @@ env*
 *.csv
 .idea/
 .DS_Store
+.vscode
 ### Python ###
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -51,7 +54,7 @@ pip-delete-this-directory.txt
 htmlcov/
 .tox/
 .nox/
-.coveage
+.coverage
 .coverage.*
 .cache
 nosetests.xml
@@ -120,7 +123,7 @@ ENV/
 env.bak/
 venv.bak/
 pythonenv*
-
+.flox/
 # Spyder project settings
 .spyderproject
 .spyproject
@@ -153,7 +156,6 @@ dmypy.json
 [Ll]ib
 [Ll]ib64
 [Ll]ocal
-[Ss]cripts
 pyvenv.cfg
 .venv
 pip-selfcheck.json

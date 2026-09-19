@@ -11,22 +11,37 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import tomllib
+
 
 # from django.utils.crypto import get_random_string
 from django.core.management.utils import get_random_secret_key
 import os
+import sys
 
+SITE_URL = os.environ.get("SITE_URL", "http://localhost:8000")
 USER_MANAGEMENT = os.environ.get("USER_MANAGEMENT") == "1"
 DEMO = os.environ.get("DEMO") == "1"
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+# Read version from pyproject.toml
+with open(BASE_DIR / "pyproject.toml", "rb") as f:
+    pyproject = tomllib.load(f)
+    VERSION = pyproject["project"]["version"]
+LT_TIMEOUT=int(os.environ.get("LT_TIMEOUT", '5'))
+SQLITE_TIMEOUT=float(os.environ.get("SQLITE_TIMEOUT", "30"))
+OPENAI_API_TIMEOUT = float(os.environ.get("OPENAI_API_TIMEOUT", "120"))
+OPENAI_API_MAX_RETRIES = max(0, int(os.environ.get("OPENAI_API_MAX_RETRIES", "0")))
+# Custom User-Agent for fetching feeds. Empty = use built-in default.
+RSS_FETCH_USER_AGENT = os.environ.get("RSS_FETCH_USER_AGENT", "")
 
+X_FRAME_OPTIONS = os.environ.get("X_FRAME_OPTIONS", "DENY")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = get_random_secret_key()
+SECRET_KEY = os.environ.get("SECRET_KEY", get_random_secret_key())
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG") == "1"
 
@@ -55,8 +70,6 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "huey.contrib.djhuey",
-    "translator.apps.TranslatorConfig",
     "core.apps.CoreConfig",
     "encrypted_model_fields",  # must set FIELD_ENCRYPTION_KEY value
     "tagulous",
@@ -64,7 +77,6 @@ INSTALLED_APPS = [
 DEBUG_PLUGINS = [
     "debug_toolbar",
     "bx_django_utils",  # https://github.com/boxine/bx_django_utils
-    #'huey_monitor',
 ]
 
 SERIALIZATION_MODULES = {
@@ -106,6 +118,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "core.context_processors.version",
             ],
         },
     },
@@ -122,21 +135,32 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": DATA_FOLDER / "db.sqlite3",
+        "OPTIONS": {
+            "timeout": SQLITE_TIMEOUT,
+        },
     }
 }
 
-HUEY = {
-    "huey_class": "huey.SqliteHuey",
-    "filename": DATA_FOLDER / "tasks.sqlite3",
-    "consumer": {
-        "workers": int(os.environ.get("HUEY_WORKERS", 10)),
-        "worker_type": "greenlet",
-    },
-    "immediate": False,
-    "results": False,
-    "store_none": False,
-    "utc": True,
-}
+if not DEBUG and "test" not in sys.argv:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": os.getenv("REDIS_URL", "redis://localhost:6379/1"),
+            "OPTIONS": {
+                # Timeout for establishing a connection in seconds
+                "socket_connect_timeout": 5,
+                # Timeout for read/write operations in seconds
+                "socket_timeout": 5,
+                # Maximum number of connections in the pool
+                "max_connections": 100,
+            },
+            # Default timeout for cache keys (1 day).
+            # Keys without an expiration date will be cleaned up,
+            # and expired keys are cleaned up periodically by Redis.
+            "TIMEOUT": 60 * 60 * 24,
+        }
+    }
+
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 
@@ -168,7 +192,7 @@ LANGUAGES = [
 LOCALE_PATHS = [BASE_DIR / "locale"]
 
 
-TIME_ZONE = "UTC"
+TIME_ZONE = os.environ.get("TIME_ZONE", "UTC") # Asia/Shanghai,America/New_York,Europe/London
 
 USE_I18N = True
 
@@ -180,9 +204,13 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "static"
+STATICFILES_BACKEND = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+if "test" in sys.argv:
+    STATICFILES_BACKEND = "django.contrib.staticfiles.storage.StaticFilesStorage"
+
 STORAGES = {
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        "BACKEND": STATICFILES_BACKEND,
     },
 }
 
@@ -194,6 +222,9 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # https://pypi.org/project/django-encrypted-model-fields/
 FIELD_ENCRYPTION_KEY = "RWdGiEq3LgOf3Tyt3ALlEnxUkIlL4wS2dCDBe_sLWWo="
 
+DEFAULT_TARGET_LANGUAGE = os.environ.get(
+    "DEFAULT_TARGET_LANGUAGE", "Chinese Simplified"
+)
 TRANSLATION_LANGUAGES = [
     ("English", "English"),
     ("Chinese Simplified", "Chinese Simplified"),
@@ -224,7 +255,8 @@ LOGGING = {
     "disable_existing_loggers": False,
     "formatters": {
         "verbose": {
-            "format": "{levelname} {asctime} {message:.240s}",
+            # "format": "{levelname} {asctime} {message:.500s}", 限制500字符
+            "format": "{levelname} {asctime}<{name}>:{message}",
             "style": "{",
         },
     },
@@ -233,20 +265,108 @@ LOGGING = {
             "level": LOG_LEVEL,
             "class": "logging.handlers.RotatingFileHandler",
             "filename": DATA_FOLDER / "app.log",
-            "maxBytes": 1024 * 1024 * 10,  # 10 MB
+            "maxBytes": 1024 * 1024 * 5,  # 10 MB
             "encoding": "utf-8",
-            "backupCount": 3,
+            "backupCount": 2,
+            "formatter": "verbose",
+        },
+        "console": {
+            "level": LOG_LEVEL,
+            "class": "logging.StreamHandler",
             "formatter": "verbose",
         },
     },
     "root": {
-        "handlers": ["logfile"],
+        "handlers": ["logfile", "console"],
         "level": LOG_LEVEL,
     },
 }
 
 default_title_translate_prompt = "You are a professional, authentic translation engine. Translate only the text into {target_language}, return only the translations, do not explain the original text."
-default_content_translate_prompt = "You are a professional, authentic translation engine. Translate only the text into {target_language}, return only the translations, do not explain the original text."
+default_content_translate_prompt = """
+You are a professional, authentic translation engine specialized in HTML content translation. 
+
+Requirements:
+1. Translate only the text content into {target_language}
+2. Preserve ALL HTML tags, attributes, and structure completely unchanged
+3. Maintain proper context awareness across different HTML elements and their relationships
+4. Consider semantic meaning within nested tags and their hierarchical context
+5. Ensure translated text fits naturally within the HTML structure
+6. Keep inline elements (like <span>, <a>, <strong>) contextually coherent with their surrounding text
+7. Maintain consistency in terminology throughout the entire HTML document
+8. Return only the translated HTML content without explanations or comments
+
+Important: Do not modify, remove, or alter any HTML tags, attributes, classes, IDs, or structural elements. Only translate the actual text content between tags.
+
+"""
 default_summary_prompt = (
     "Summarize the following text in {target_language} and return markdown format."
 )
+
+default_digest_prompt = """
+You are an editor-in-chief and expert analyst. Create a concise, objective, and well-structured daily digest from multiple articles.
+
+OUTPUT FORMAT
+3–5 categories (auto-generated, short topic names):
+- Header: ## {category}
+- Keep only the most important articles in this category
+- For each kept article:
+  - **[Title](LINK_X)**
+  > 1–2 sentences, present tense, active voice; highlight novel results/decisions/metrics/impacts; avoid repeated phrasing.
+
+Selection policy (apply strictly):
+- Prioritize significance and real-world impact (e.g., regulatory decisions, major launches, security incidents, funding/M&A, peer-reviewed findings)
+- Prioritize novelty; ignore incremental or routine updates and marketing/promotional posts
+- Prefer credible, primary sources; avoid rumors/speculation
+- Deduplicate across sources; if multiple items cover the same event, keep the most comprehensive one and drop the rest
+- If a category has no important items, skip the category entirely
+
+General rules:
+- Maintain a neutral, objective tone; no content beyond the provided texts
+- Extract facts, named entities, numbers, dates, and concrete outcomes
+- Vary wording across items to avoid repetition
+- Title rewrite (each item): rewrite into {target_language} objectively (no hype/clickbait/exclamations). Do NOT copy source wording; always paraphrase into a concise, neutral title even if the source is already in {target_language}.
+"""
+
+output_format_for_digest_prompt = """
+
+**OUTPUT FORMAT**
+- All headers, titles, and summaries must be in {target_language}.
+- Return ONLY the digest content in the markdown format
+- Use the exact LINK_X placeholders. Do not modify, replace, add, or remove links. Keep the format **[Title](LINK_X)**.
+- Do NOT add any explanatory notes, disclaimers, or meta-commentary
+- Do NOT provide usage instructions or suggestions
+"""
+
+default_filter_prompt = """
+You are an advanced RSS content curator. Analyze the article following these protocols:
+
+1. **Cross-article Deduplication**:
+   - Identify duplicate content using semantic similarity
+   - For duplicate sets:
+     • Keep the most comprehensive version
+
+2. **Ad Exclusion**:
+   • Discard if any detected:
+     - Promotional language patterns
+     - Affiliate links
+     - Brand mentions >5% of content
+     - "Sponsored" disclosure
+
+3. **Clickbait Detection**
+   Discard if headline:
+   - Uses sensational punctuation (e.g., "SHOCKING!", "You won't BELIEVE...")
+   - Poses unanswered questions ("What happened next?")
+   - Employs urgency/scarcity tactics ("Act NOW!")
+"""
+
+output_format_for_filter_prompt = """
+
+**Output Requirements**
+• Only return "Passed" or "Blocked" based on the above checks.
+• ABSOLUTELY NO:
+  - Explanations
+  - Metadata
+  - Discarded IDs
+  - Additional text
+"""

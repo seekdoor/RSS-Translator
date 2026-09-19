@@ -1,20 +1,42 @@
 services:
-  rsstranslator:
-    image: rsstranslator/rsstranslator
+  rssbox:
+    image: versun/rssbox
     environment:
-      - PYTHONUNBUFFERED=0
-      - PYTHONDONTWRITEBYTECODE=1
+      - SITE_URL=http://127.0.0.1:8000
+      - REDIS_URL=redis://rssbox_redis:6379/0
+      - CSRF_TRUSTED_ORIGINS=http://127.0.0.1:8000
+      - DEFAULT_TARGET_LANGUAGE=Chinese Simplified # See https://github.com/versun/rssbox/blob/main/config/settings.py#L199 for optional values
+      - PORT=8000
       - DEBUG=0
       - DEMO=0
       - USER_MANAGEMENT=0
+      - OPENAI_API_TIMEOUT=300
+      - OPENAI_API_MAX_RETRIES=0
       - LOG_LEVEL=ERROR
-      - HUEY_WORKERS=10
-      - CSRF_TRUSTED_ORIGINS=http://127.0.0.1:8000
-      - default_update_frequency=30
       - default_max_posts=20
     volumes:
-      - ./data:/home/rsstranslator/data
+      - ./data:/app/data
     ports:
       - 8000:8000
     restart: always
-    #command: bash -c "python manage.py init_server && python manage.py run_huey & uvicorn config.asgi:application --host 0.0.0.0"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import redis,os; r=redis.Redis.from_url(os.getenv('REDIS_URL')); r.ping()"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    depends_on:
+      - rssbox_redis
+  
+  rssbox_redis:
+    image: redis:latest
+    ports:
+      - 6379:6379
+    volumes:
+      - ./data:/data
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 5s

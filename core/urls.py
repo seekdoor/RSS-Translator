@@ -1,15 +1,74 @@
 from django.urls import path
 
 from . import views
-from django.urls import re_path
 
 app_name = "core"
 urlpatterns = [
     # path("filter/<str:name>", views.filter, name="filter"),
-    path("all/<str:name>", views.all, name="all"),
-    path("all/<str:name>/", views.all, name="all"),
-    path("category/<str:category>", views.category, name="category"),
-    path("category/<str:category>/", views.category, name="category"),
-    path("json/<str:feed_sid>/", views.rss_json, name="json"),
-    re_path(r"(?P<feed_sid>[^/]+)/?$", views.rss, name="rss"),
+    path(
+        "tag/proxy/<str:tag>",
+        views.tag,
+        kwargs={"feed_type": "o", "format": "xml"},
+    ),
+    path(
+        "tag/proxy/<str:tag>/",
+        views.tag,
+        kwargs={"feed_type": "o", "format": "xml"},
+    ),
+    path(
+        "tag/json/<str:tag>",
+        views.tag,
+        kwargs={"feed_type": "t", "format": "json"},
+    ),
+    path(
+        "tag/json/<str:tag>/",
+        views.tag,
+        kwargs={"feed_type": "t", "format": "json"},
+    ),
+    path(
+        "tag/<str:tag>",
+        views.tag,
+        kwargs={"feed_type": "t", "format": "xml"},
+    ),
+    path(
+        "tag/<str:tag>/",
+        views.tag,
+        kwargs={"feed_type": "t", "format": "xml"},
+    ),
+    path(
+        "proxy/<str:feed_slug>", views.rss, kwargs={"feed_type": "o", "format": "xml"}
+    ),
+    path(
+        "proxy/<str:feed_slug>/", views.rss, kwargs={"feed_type": "o", "format": "xml"}
+    ),
+    path(
+        "json/<str:feed_slug>", views.rss, kwargs={"feed_type": "t", "format": "json"}
+    ),
+    path(
+        "json/<str:feed_slug>/", views.rss, kwargs={"feed_type": "t", "format": "json"}
+    ),
+    path("import_opml/", views.import_opml, name="import_opml"),
+    # Digest URLs
+    path("digest/view/<str:slug>", views.digest_view, name="digest_view"),
+    path("digest/view/<str:slug>/", views.digest_view, name="digest_view"),
+    path(
+        "digest/json/<str:slug>",
+        views.digest,
+        kwargs={"format": "json"},
+        name="digest_json",
+    ),
+    path(
+        "digest/json/<str:slug>/",
+        views.digest,
+        kwargs={"format": "json"},
+        name="digest_json",
+    ),
+    path(
+        "digest/<str:slug>", views.digest, kwargs={"format": "xml"}, name="digest_rss"
+    ),
+    path(
+        "digest/<str:slug>/", views.digest, kwargs={"format": "xml"}, name="digest_rss"
+    ),
+    path("<str:feed_slug>", views.rss, kwargs={"feed_type": "t", "format": "xml"}),
+    path("<str:feed_slug>/", views.rss, kwargs={"feed_type": "t", "format": "xml"}),
 ]
